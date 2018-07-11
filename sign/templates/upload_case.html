@@ -1,0 +1,35 @@
+{% extends "./admin/base_site.html" %}
+{% block title %}自动化测试平台{% endblock %}
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+      <a href="/index/"><strong>首页</strong></a>
+      &nbsp;&nbsp;&nbsp;&nbsp;<a href="/upload_case/"><strong>批量测试</strong></a>
+      &nbsp;&nbsp;&nbsp;&nbsp;<a href="/test_tools/"><strong>测试工具</strong></a>
+    </div>
+{% endblock %}
+{% block content %}
+{% block branding %}
+<h1 id="site-name">
+  <a href="/index/">自动化测试平台</a>
+</h1>
+{% endblock %}
+{% load staticfiles %}
+<div class="header-wrapper">
+</div>
+    <form action="/batch_test/" method="post" enctype="multipart/form-data" id="form-model">
+      <div>
+        <input type="file" name="myfile">
+        <input type="submit" value="OK">
+      </div>
+    </form>
+<div class="row">
+      <div class="col-md-8 col-md-offset-2">
+          <br>
+          <a href="{% static "file/temp.xls" %}">下载模板</a>
+      </div>
+      <div class="col-md-8 col-md-offset-2">
+          <br>
+          <a href="{% static "file/report.xls" %}">测试结果报告</a>
+      </div>
+</div>
+{% endblock %}
