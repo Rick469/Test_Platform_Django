@@ -1,0 +1,254 @@
+{% extends 'base_list.html' %}
+
+{% block li %}
+<li>
+    <a href="#subPages" data-toggle="collapse" class="active"><i class="lnr lnr-file-empty"></i> <span>接口自动化</span> <i class="icon-submenu lnr lnr-chevron-left"></i></a>
+    <div id="subPages" class="collapse in">
+        <ul class="nav">
+            <li><a href="/api/list/" class="">接口列表</a></li>
+            <li><a href="/case/list/" class="active">用例列表</a></li>
+            <li><a href="/schedule/list/" class="">测试任务</a></li>
+            <li><a href="/dependency/list/" class="">全局参数</a></li>
+        </ul>
+    </div>
+</li>
+{% endblock %}
+
+{% block list-body %}
+
+    <div class="container-fluid">
+        <div class="col-md-1 pull-left">
+            <ul class="breadcrumb">
+                <li>用例列表</li>
+            </ul>
+        </div>
+        <div class="pull-right">
+            <a href="/case/add/"><button class="btn btn-primary">添加用例</button></a>
+            <button class="btn btn-primary" data-toggle="modal" onclick="add_test_schedule()">添加到测试任务</button>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-body">
+            <form method="get" action="/case/list/filter/">
+                <div class="row">
+                    <div class="form-group pull-right">
+                        <button type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                        <a type="button" class="btn btn-primary" onclick="btn_reset()"><span class="lnr lnr-trash"></span></a>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <input name="search_name" type="text" value="{{ origin_data.case_name }}" class="form-control form-control" placeholder="用例名称">
+                        </div>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <input name="search_desc" type="text" value="{{ origin_data.case_desc }}" class="form-control form-control" placeholder="用例描述">
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="text-left" width="20">
+                    <input type="checkbox" id="checkbox-ifs" onclick="changeBox(this)" value="0">
+                  </th>
+                  <th><strong>用例名称</strong></th>
+                  <th><strong>所属项目</strong></th>
+                  <th><strong>用例描述</strong></th>
+                  <th><strong>创建时间</strong></th>
+                  <th><strong>文件名</strong></th>
+                  <th><strong>状态</strong></th>
+                  <th><strong>操作</strong></th>
+                </tr>
+              </thead>
+                <tbody>
+                {%for case in list%}
+                    <tr>
+                      <td>
+                        <input type="checkbox" class="checkbox-ifs" value={{case.id}} name="checkbox_id">
+                      </td>
+                      <td>{{case.name}}</td>
+                      <td>{{case.belong_project}}</td>
+                      <td>{{case.description}}</td>
+                      <td>{{case.create_time|date:"Y-m-d H:i:s"}}</td>
+                      <td>{{case.file_name}}</td>
+                      <td>{{case.status}}</td>
+                      <td>
+                          <a href="/case/edit/?operation=query&id={{ case.id }}"><span class="fa fa-pencil"></span>&nbsp;&nbsp;</a>
+                          <a href="/static/api_test_file/case_file/{{ case.file_name }}"><span class="fa fa-download"></span>&nbsp;&nbsp;</a>
+                          <a href="/case/edit/?operation=delete&id={{ case.id }}" onclick="return confirm('确认删除？')"><span class="fa fa-trash"></span>&nbsp;&nbsp;</a>
+                      </td>
+                    </tr>
+                {%endfor%}
+              </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block base_list_script %}
+
+<script type="text/javascript">
+  function changeBox(box){
+    var boxs = document.getElementsByClassName('checkbox-ifs');
+    if(box.checked){
+       for (i=0; i<boxs.length; i++){
+            document.getElementsByClassName('checkbox-ifs')[i].checked = true;
+       }
+    }else{
+       for (i=0; i<boxs.length; i++){
+           document.getElementsByClassName('checkbox-ifs')[i].checked = false;
+       }
+    }
+  }
+</script>
+
+
+<script>
+    function add_test_schedule() {
+        var selected_ids = [];
+        var checked_checkbox = $("input:checkbox:checked");
+        $.each(checked_checkbox, function (i, n) {
+            if($(n).val()!='0'){
+                selected_ids.push($(n).val());
+            }
+        });
+        var case_ids = String(selected_ids)
+        if(!case_ids.length){
+            alert('请至少选择一项')
+        }
+        else {
+            var html = ''
+            html += '<div class="modal fade" id="scheduleModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">'
+                html += '<form action="/schedule/add/" enctype="multipart/form-data" method="post" onsubmit="return schedule_check()" id="schedule_add_form">\n'
+                html += '<div class="modal-dialog">'
+                    html += '<div class="modal-content">'
+                        html += '<div class="modal-header">'
+                            html += '<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>'
+                            html += '<h4 class="modal-title" id="myModalLabel">添加测试任务</h4>'
+                        html += '</div>'
+                        html +='<div class="modal-body"><div class="form-horizontal">\n' +
+                            '                <div class="form-group">\n' +
+                            '                    <label class="control-label col-md-2">任务名</label>\n' +
+                            '                    <div class="col-md-8">\n' +
+                            '                        <input class="form-control" name="schedule_name">\n' +
+                            '                    </div>\n' +
+                            '                </div>\n' +
+                            '                <div class="form-group" style="display: none">\n' +
+                            '                    <label class="control-label col-md-2">用例ID</label>\n' +
+                            '                    <div class="col-md-8">\n' +
+                            '                        <input class="form-control" name="case_ids" value="' +
+                            case_ids+'                    ">\n' +
+                            '                    </div>\n' +
+                            '                </div>\n' +
+                            '                <div class="form-group">\n' +
+                            '                    <label class="control-label col-md-2">执行环境</label>\n' +
+                            '                    <div class="col-md-8">\n' +
+                            '                        <select class="form-control" name="schedule_env">\n' +
+                            '                            <option value="staging">Staging</option>\n' +
+                            '                            <option value="test">Test</option>\n' +
+                            '                        </select>\n' +
+                            '                    </div>\n' +
+                            '                </div>\n'
+                            {#'                <div class="form-group">\n' +#}
+                            {#'                    <label class="control-label col-md-2">执行时间</label>\n' +#}
+                            {#'                    <div class="col-md-8">\n' +#}
+                            {#'                        \n' +#}
+                            {#'                         <input type="datetime-local" name="schedule_time"> \n' +#}
+                            {#'                    </div>\n' +#}
+                            {#'                </div>\n'#}
+                            html += '</div></div>'
+                        html += '<div class="modal-footer">'
+                        html += '<button type="submit" class="btn btn-primary">确定</button>'
+                        html += '<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>'
+                            html += '                    </div>\n'
+                        html += '</div>'
+                    html += '</div>'
+                html += '</div>'
+            html += '</form>'
+            html += '</div>'
+            var el = $('#scheduleModal')
+            if(el.length){
+                el.remove()
+            }
+            $('body').append(html);
+            $('#scheduleModal').modal('show');
+        }
+
+    }
+</script>
+
+<script>
+    function schedule_check() {
+        var form = new FormData(document.getElementById("schedule_add_form"));
+        var schedule_name = form.get('schedule_name');
+        var schedule_env = form.get('schedule_env');
+        {#var schedule_time = form.get('schedule_time');#}
+        console.log(schedule_name, schedule_env, schedule_time);
+
+        if (!(schedule_name && schedule_env)){
+            alert('数据填写不完整，请检查！');
+            return false
+        }
+        else {
+            return true
+        }
+    }
+</script>
+// ajax分页
+{#<script>#}
+{#$('#page').bootstrapPaginator({#}
+{#    currentPage: 1,#}
+{#    totalPages: 2,#}
+{#    size:"normal",#}
+{#    bootstrapMajorVersion: 3,#}
+{#    alignment:"right",#}
+{#    numberOfPages:5,#}
+{##}
+{#        onPageClicked: function (event, originalEvent, type, page){//给每个页眉绑定一个事件，其实就是ajax请求，其中page变量为当前点击的页上的数字。#}
+{#            $.ajax({#}
+{#                url:'./paginator/',#}
+{#                type:'POST',#}
+{#                data:{'page':page,'page_size':1},#}
+{#                dataType:'JSON',#}
+{#                success:function (response) {#}
+{#                        $('tbody').empty();#}
+{#                    var html = '';#}
+{#                    console.log(response)#}
+                    {#var response = JSON.parse(response)#}
+{#                    console.log(response)#}
+{#                    var response_case = response.response_case#}
+{#                    console.log(response_case)#}
+{#                  if(response_case){#}
+{#                        for(var i=0; i<response_case.length; i++){#}
+{#                            console.log(response_case[i])#}
+{#                            html += '<tr>\n' +#}
+{#                                '                      <td>\n' +#}
+{#                                '                        <input type="checkbox" class="checkbox-ifs" value='+response_case[i].case_id+' name="checkbox_id">\n' +#}
+{#                                '                      </td>\n' +#}
+{#                                '                      <td>'+response_case[i].case_id+'</td>\n' +#}
+{#                                '                      <td>'+response_case[i].case_name+'</td>\n' +#}
+{#                                '                      <td>'+response_case[i].case_desc+'</td>\n' +#}
+{#                                '                      <td>'+response_case[i].case_create_time+'</td>\n' +#}
+{#                                '                      <td>'+response_case[i].case_status+'</td>\n' +#}
+{#                                '                      <td>\n' +#}
+{#                                '                          <a href="/static/case_file/'+response_case[i].case_filename+'"><span class="fa fa-download"></span>&nbsp;&nbsp;</a>\n' +#}
+{#                                '                          <a href="/case/edit/?operation=query&id='+response_case[i].case_id+'"><span class="fa fa-pencil"></span>&nbsp;&nbsp;</a>\n' +#}
+{#                                '                          <a href="/case/edit/?operation=delete&id='+response_case[i].case_id+'" onclick="return confirm(\'确认删除？\')"><span class="fa fa-trash"></span>&nbsp;&nbsp;</a>\n' +#}
+{#                                '                      </td>\n' +#}
+{#                                '                    </tr>'#}
+{#                        }#}
+{#                    }#}
+{#                        $('tbody').append(html)#}
+{#                    }#}
+{#            })#}
+{#        }#}
+{#});#}
+{#</script>#}
+
+{% endblock %}

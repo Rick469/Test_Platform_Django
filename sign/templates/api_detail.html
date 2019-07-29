@@ -1,71 +1,108 @@
-{% extends "./admin/base_site.html" %}
-{% block title %}自动化测试平台{% endblock %}
-{% block breadcrumbs %}
-    <div class="breadcrumbs">
-      <a href="/index/"><strong>首页</strong></a>
-      &nbsp;&nbsp;&nbsp;&nbsp;<a href="/upload_case/"><strong>批量测试</strong></a>
-      &nbsp;&nbsp;&nbsp;&nbsp;<a href="/test_tools/"><strong>测试工具</strong></a>
-    </div>
-{% endblock %}
-{% block content %}
-{% block branding %}
-<h1 id="site-name">
-  <a href="/index/">自动化测试平台</a>
-</h1>
-{% endblock %}
-<!-- END Header -->
-<!-- Content -->
-<div class="header-wrapper">
-</div>
+{% extends "./base.html" %}
+{% block main-content %}
+
+<ul class="breadcrumb">
+    <li><a href="/api/list/">接口列表</a> </li>
+    <li>接口详情</li>
+</ul>
+
+<div class="panel">
+    <div class="panel-body">
       <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-          <thead>
-            <tr>
-              <td class="text-left" width="50"><strong>ID</strong></td>
-              <td class="text-left " width="80"><strong>接口名称</strong></td>
-              <td class="text-left" width="300"><strong>接口地址</strong></td>
-              <td class="text-left" width="100"><strong>POST/GET</strong></td>
-              <td class="text-left" width="60"><strong>创建时间</strong></td>
-              <td class="text-left" width="50"><strong>状态</strong></td>
-            </tr>
-          </thead>
-            <tbody>
+          <table class="table">
+              <thead>
                 <tr>
-                  <td class="text-left" width="50">{{api.id}}</td>
-                  <td class="text-left" width="100">{{api.name}}</td>
-                  <td class="text-left" width="300">{{api.address}}</td>
-                  <td class="text-left" width="100">{{api.method}}</td>
-                  <td class="text-left" width="150">{{api.create_time}}</td>
-                  <td class="text-left" width="50">{{api.status}}</td>
+                  <th><strong>ID</strong></th>
+                  <th><strong>接口名称</strong></th>
+                  <th><strong>接口路径</strong></th>
+                  <th><strong>数据传输方式</strong></th>
+                  <th><strong>POST/GET</strong></th>
+                  <th><strong>创建时间</strong></th>
+                  <th><strong>状态</strong></th>
                 </tr>
-          </tbody>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{api.id}}</td>
+                  <td>{{api.name}}</td>
+                  <td>{{api.path}}</td>
+                  <td>{{api.content_type}}</td>
+                  <td>{{api.method}}</td>
+                  <td>{{api.create_time|date:"Y-m-d H:i:s"}}</td>
+                  <td>{{api.status}}</td>
+                </tr>
+              </tbody>
         </table>
       </div>
-      <div>
-  <form action="/run_test/"method="post" enctype="multipart/form-data" id="form-model">
-    <table>
-      {% if test_data %}
-      {% for key, value in test_data.items %}
-        <tr>
-          <td class="text-left" width="100">{{key}}</td>
-          <td><input name="{{key}}" type="text" value="{{value}}"><br></td>
-        </tr>
-      {% endfor %}
-      {% endif %}
+      <div class="panel">
+          <form action="/run_test/"method="post" enctype="multipart/form-data" id="form-model" class="form-horizontal">
+              <div class="panel-heading">接口参数</div>
+              <div class="panel-body">
+                  <div class="form-group" style="display:none">
+                       <label class="control-label col-md-1">ID</label>
+                       <div class="col-md-6">
+                          <input name="id" type="text" value="{{api.id}}" class="form-control">
+                       </div>
+                  </div>
+                  <div class="col-md-7">
+                      <textarea name="data" id="data" class="form-control" rows="10">{{ api.params }}</textarea>
+                  </div>
+                  <div id="toastr-demo" class="container col-md-7 pull-left" >
+                      <button type="button" onclick="send_data()" class="btn btn-primary pull-right">Go</button>
+                  </div>
+              </div>
+      </div>
+          </form>
+{#          <div id="toastr-demo" class="col-md-6 pull-left" >#}
+{#              <button type="button" id="submit_btn" onclick="go()" class="btn btn-primary btn-toastr pull-right" data-context="info" data-message='' data-position="top-right">Go</button>#}
+{#          </div>#}
+      </div>
+    </div>
+</div>
 
-      {% if params %}
-      {% for param in params %}
-        <tr>
-          <td class="text-left" width="100">{{param}}</td>
-          <td><input name="{{param}}" type="text" value=""><br></td>
-        </tr>
-      {% endfor %}
-      {% endif %}
-      <tr>
-        <td class="text-left" width="100" style="border-bottom:0;"></td>
-        <td style="border-bottom:0;" align="right"><button type="submit" name="run_button" value="{{api.id}}">Run</button></td>
-      </tr>
-    </table>
-</div>
-</div>
+{% block script %}
+<script>
+function send_data(){
+    var form = new FormData(document.getElementById("form-model"));
+    $.ajax({
+        url:"/run_test/",
+        type:"post",
+        data:form,
+        async : false,
+        processData:false,
+        contentType:false,
+        success : function(response_data) {
+            result = response_data
+            tag_div = $("#alert")
+            if(tag_div){
+                tag_div.remove()
+            }
+            if(result){
+                {#$("#submit_btn").attr("data-context", 'info')#}
+                success_div = '<div id="alert" class="alert alert-success alert-dismissable" width="20"><button type="button" class="close" data-dismiss="alert">×</button>'+result+'</div>'
+                $('.breadcrumb').before(success_div)
+            }
+            else {
+                danger_div = '<div id="alert" class="alert alert-danger alert-dismissable" width="20"><button type="button" class="close" data-dismiss="alert">×</button>'+result+'</div>'
+                $('.breadcrumb').before(danger_div)
+            }
+        }
+    });
+}
+</script>
+
+<script>
+var txt = document.getElementById("data")
+if(txt){
+    $(document).ready(
+    function format_json() {
+        var params = {{ api.params | safe }}   // |safe关闭django自动转译
+        var apiData = JSON.stringify(params, null, 4);
+        $("#data").text(apiData)
+    }
+)
+}
+</script>
+{% endblock %}
+
 {% endblock %}

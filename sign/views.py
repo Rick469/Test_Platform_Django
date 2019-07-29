@@ -1,142 +1,478 @@
 # coding:utf-8
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
-from sign.models import apis
+from sign.models import apis, Case, Dependency, Schedule
 import requests, xlrd,xlwt, json, os
-from xlwt import Style
+from django.core.paginator import Paginator
+from django.core import serializers
 from django.contrib import messages
 from sign.test_tools import TestTools
 import datetime
 import decimal
+from sign.config.path import api_case_file_dir
+from sign.API_Test.create_scripts import Create
+
 
 def index(request):
     """index首页"""
-    api_list = apis.objects.all()  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
-    return render(request, 'index.html', {'api_list': api_list}) #返回获取的数据行
+    return render(request, 'base.html') #返回获取的数据行
+
+
+def paginate(objs, page=1):
+    """重新封装分页器"""
+    paginator = Paginator(objs, 20)     # 分页器对象,每页大小为20
+    total_pages = paginator.num_pages       # 总页数
+    list= paginator.page(page).object_list   # 当前请求页case列表
+    r = {'current_page': page, 'total_pages': total_pages, 'list': list}
+    return r
+
+
+def api_list(request):
+    """接口列表页"""
+    flag = request.GET.get('flag', '')
+    message = request.GET.get('message', '')
+    api_obj = apis.objects.all().order_by('id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+
+    page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
+    result = paginate(api_obj, page)
+
+    if flag and message:
+        result.update({'flag': flag, 'message': message})
+        return render(request, 'api_list.html', result)
+    else:
+        return render(request, 'api_list.html', result)
+
+
+def api_list_filter(request):
+    """接口列表筛选器"""
+    print(request.GET.copy())
+    api_address = request.GET.get('search_address', '')
+    api_name = request.GET.get('search_name', '')
+    api_belong_project = request.GET.get('search_belong_project', '')
+    origin_data = {'api_address': api_address, 'api_name': api_name, 'api_belong_project': api_belong_project}
+
+    api_list = apis.objects.filter(path__contains=api_address, name__contains=api_name, belong_project__contains=api_belong_project).order_by('id')
+    print(api_list)
+    page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
+    result = paginate(api_list, page)
+    result.update({'origin_data': origin_data})
+    return render(request, 'api_list.html', result)     # 返回获取的数据行
+
 
 def api_detail(request):
     """接口详情页"""
-    url = request.path   # 获取当前地址url
-    loc_start = url.rindex('_')+1    # 从url中获取接口ID的索引位置
-    id = url[loc_start:]            # 获取接口ID
-    api = apis.objects.get(id=id)   #获取单个对象，通过id值获取数据行
-    params_list = (api.params.strip()).split(',')   # 将数据库中params字段值拆分成列表，在HTML上打印出来,.strip()移除首位字符，默认空格
-    return render(request, 'api_detail.html', {'api': api, 'params': params_list})
+    id = request.GET.get('id')
+    api = apis.objects.get(id=id)   # 获取单个对象，通过id值获取数据行
+    return render(request, 'api_detail.html', {'api': api})
+
+
+def api_add(request):
+    return render(request, 'api_add.html')
+
+
+def api_add_save(request):
+    try:
+        print(request.POST.copy())
+        name = request.POST.get('api_name')
+        belong_project = request.POST.get('api_belong_project')
+        address = request.POST.get('api_address')
+        method = request.POST.get('api_method')
+        content_type = request.POST.get('api_content_type', '')
+        params = request.POST.get('body').strip()
+
+        if method == 'POST':
+            if content_type == 'JSON':  # JSON格式body需要先JSON化再存入数据库
+                params = json.dumps(eval(params))   # 去除params空格和换行符，并转为Json格式
+        ob = apis.objects.create(name=name, belong_project=belong_project, path=address, method=method, content_type=content_type, params=params, status=True)
+    except Exception as e:
+        print(e)
+        return HttpResponseRedirect('/api/list/?flag=fail&message=添加失败： internal error')
+    else:
+        return HttpResponseRedirect('/api/list/?flag=success&message=添加成功')
+
+
+def api_edit(request):
+    operation = request.GET.get('operation')
+    id = request.GET.get('id')
+    api = apis.objects.get(id=id)
+
+    if operation == 'query':    # 编辑-详情页
+        return render(request, 'api_edit.html', {'api': api})
+
+    elif operation == 'save':   # 保存更改
+        print(request.POST.copy())
+        name = request.POST.get('api_name')
+        belong_project = request.POST.get('api_belong_project')
+        address = request.POST.get('api_address')
+        method = request.POST.get('api_method')
+        content_type = request.POST.get('api_content_type', '')
+        params = request.POST.get('body').strip()
+
+        if method == 'POST':
+            if content_type == 'JSON':  # JSON格式body需要先JSON化再存入数据库
+                params = json.dumps(eval(params))   # 去除params空格和换行符，并转为Json格式
+        try:
+            # api = apis.objects.filter(id=id)
+            # api.update(name=name, belong_project=belong_project, address=address, method=method, content_type=content_type, params=body)
+            api.name = name
+            api.belong_project = belong_project
+            api.path = address
+            api.method = method
+            if method == 'POST':
+                api.content_type = content_type
+            elif method == 'GET':
+                api.content_type = ''
+            api.params = params
+            api.save()
+        except Exception as e:
+            print(e)
+            return HttpResponseRedirect('/api/list/?flag=fail&message=更新失败： internal error')
+        else:
+            return HttpResponseRedirect('/api/list/?flag=success&message=更新成功')
+    elif operation == 'delete':
+        try:
+            api.delete()
+        except Exception as e:
+            print(e)
+            return HttpResponseRedirect('/api/list/?flag=fail&message=删除失败： internal error')
+        else:
+            return HttpResponseRedirect('/api/list/?flag=success&message=删除成功')
+
+
+def case_list(request):
+    flag = request.GET.get('flag', '')
+    message = request.GET.get('message', '')
+
+    cases_obj = Case.objects.all().order_by('id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+
+    page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
+    result = paginate(cases_obj, page)
+
+    if flag and message:
+        result.update({'flag': flag, 'message': message})
+        return render(request, 'case_list.html', result)
+    else:
+        return render(request, 'case_list.html', result)
+
+
+# def case_list_paginator(request):
+#     # json_request = json.loads(request)
+#     # page = json_request.get('page', 1)
+#     # page_size = json_request.get('page_size', 1)
+#     page = request.GET.get('page', 1)
+#     page_size = request.GET.get('page_size', 1)
+#     cases = Case.objects.all().order_by('id')
+#     paginator = Paginator(cases, page_size)
+#     total_pages = paginator.num_pages
+#     case_list = paginator.page(page).object_list
+
+    # 返回Json格式数据实现Ajax分页
+    # response_case = []
+    # for case in case_list:
+    #     response_case.append({'case_id': case.id, 'case_name': case.name, 'case_desc': case.description, 'case_create_time': case.create_time.strftime("%Y-%m-%d %H:%M:%S"), 'case_status': case.status, 'file_name': str(case.file_name)})
+    # response = {'page_count': page_count, 'response_case': response_case}
+    # print(response)
+    # return HttpResponse(json.dumps(response))
+    # return render(request, 'case_list.html', {'cases': case_list, 'total_pages': total_pages, 'current_page': page})
+
+
+def case_list_filter(request):
+    """用例筛选器"""
+    print(request.GET.copy())
+    case_desc = request.GET.get('search_desc', '')
+    case_name = request.GET.get('search_name', '')
+    origin_data = {'case_desc': case_desc, 'case_name': case_name}
+    case_list = Case.objects.filter(description__contains=case_desc, name__contains=case_name).order_by('id')
+    print(case_list)
+    page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
+    result = paginate(case_list, page)
+    result.update({'origin_data': origin_data})
+    return render(request, 'case_list.html', result)     # 返回获取的数据行
+
+
+def case_add(request):
+    return render(request, 'case_add.html')
+
+
+def case_add_save(request):
+    case_name = request.POST.get('case_name')
+    case_desc = request.POST.get('case_desc')
+    case_file = request.FILES.get("case_file")
+    case_belong_project = request.POST.get('case_belong_project')
+    print(request.POST.copy())
+    file_name = datetime.datetime.now().strftime('%Y%m%d%H%M%S') + case_file.name
+    f = open(api_case_file_dir+file_name, 'wb+')
+    for chunk in case_file.chunks():
+        f.write(chunk)
+    f.close()
+    try:
+        ob = Case.objects.create(name=case_name,belong_project=case_belong_project, description=case_desc, file_name=file_name, status=True)
+    except Exception as e:
+        print(e)
+        return HttpResponseRedirect('/case/list/?flag=fail&message=添加失败： internal error')
+    else:
+        return HttpResponseRedirect('/case/list/?flag=success&message=添加成功')
+
+
+def case_edit(request):
+    operation = request.GET.get('operation')
+    id = request.GET.get('id')
+    case = Case.objects.get(id=id)
+
+    if operation == 'query':    # 编辑-详情页
+        return render(request, 'case_edit.html', {'case': case})
+
+    elif operation == 'save':   # 保存更改
+        case_name = request.POST.get('case_name')
+        case_desc = request.POST.get('case_desc')
+        case_file = request.FILES.get('case_file')
+        case_belong_project = request.POST.get('case_belong_project')
+        print(request.POST.copy(), '\n', case_file)
+
+        if case_file:       # 有文件上传才存储文件
+            file_name = datetime.datetime.now().strftime('%Y%m%d%H%M%S') + case_file.name
+            f = open(api_case_file_dir + file_name, 'wb+')
+            for chunk in case_file.chunks():
+                f.write(chunk)
+            f.close()
+        try:
+            case.name = case_name
+            case.description = case_desc
+            case.belong_project = case_belong_project
+            if case_file:
+                case.file_name = file_name      # 有新的文件上传才更新file_name
+            case.save()
+        except Exception as e:
+            print(e)
+            return HttpResponseRedirect('/case/list/?flag=fail&message=更新失败： internal error')
+        else:
+            return HttpResponseRedirect('/case/list/?flag=success&message=更新成功')
+    elif operation == 'delete':
+        try:
+            case.delete()
+        except Exception as e:
+            print(e)
+            return HttpResponseRedirect('/case/list/?flag=fail&message=删除失败： internal error')
+        else:
+            return HttpResponseRedirect('/case/list/?flag=success&message=删除成功')
+
+
+def schedule_list(request):
+
+    # 若是HttpResponseRedirect到此页面则有flag和message，相应显示出来；直接访问没有该值
+    flag = request.GET.get('flag', '')
+    message = request.GET.get('message', '')
+
+    schedule_obj = Schedule.objects.all().order_by('id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+
+    page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
+    result = paginate(schedule_obj, page)
+    if flag and message:
+        result.update({'flag': flag, 'message': message})
+        return render(request, 'schedule_list.html', result)
+    else:
+        return render(request, 'schedule_list.html', result)
+
+
+def schedule_list_filter(request):
+    env = request.GET.get('search_env', '')
+    name = request.GET.get('search_name', '')
+    schedule_status = request.GET.get('search_schedule_status', '')
+    origin_data = {'env': env, 'name': name, 'schedule_status': schedule_status}
+
+    schedule_list = Schedule.objects.filter(env__contains=env, name__contains=name, schedule_status__contains=schedule_status).order_by('id')
+    page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
+    result = paginate(schedule_list, page)
+    result.update({'origin_data': origin_data})
+    return render(request, 'schedule_list.html', result)     # 返回获取的数据行
+
+
+def schedule_add(request):
+    schedule_name = request.POST.get('schedule_name')
+    schedule_env = request.POST.get('schedule_env')
+    schedule_case_ids = request.POST.get('case_ids')
+    try:
+        ob = Schedule.objects.create(name=schedule_name, env=schedule_env, case_ids=schedule_case_ids)
+    except Exception as e:
+        print(e)
+        return HttpResponseRedirect('/case/list/?flag=fail&message=添加失败： internal error')
+    else:
+        return HttpResponseRedirect('/case/list/?flag=success&message=添加成功')
+
+
+def deependency_list(request):
+    # 若是HttpResponseRedirect到此页面则有flag和message，相应显示出来；直接访问没有该值
+    flag = request.GET.get('flag', '')
+    message = request.GET.get('message', '')
+
+    dependency_obj = Dependency.objects.all().order_by('id')   # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+
+    page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
+    result = paginate(dependency_obj, page)
+    if flag and message:
+        result.update({'flag': flag, 'message': message})
+        return render(request, 'dependency_list.html', result)
+    else:
+        return render(request, 'dependency_list.html', result)
+
+
+def deependency_list_filter(request):
+    param = request.GET.get('search_param', '')
+    value = request.GET.get('search_value', '')
+    origin_data = {'param': param, 'value': value}
+
+    dependency_list = Dependency.objects.filter(param__contains=param, value__contains=value).order_by('id')
+    page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
+    result = paginate(dependency_list, page)
+    result.update({'origin_data': origin_data})
+    return render(request, 'dependency_list.html', result)     # 返回获取的数据行
 
 
 def run_test(request):
     """接口详情-单个接口调用"""
-    id = request.POST.getlist('run_button')  # 获取run_button的value值（即接口ID），取得的是列表
-    print(id)
-    api = apis.objects.get(id=id[0]) #获取单个对象，通过id值获取数据行
-    print(api)
-    method = api.method.lower()
-    print(method)
-    url = api.address
-    print(url)
+    print(request.POST.copy())
+    id = request.POST.get('id')  # 获取接口ID
+    api = apis.objects.get(id=id)    # 获取单个对象，通过id值获取数据行
+    method = api.method
+    url = 'http://'+api.belong_project+'-staging.ehsy.com'+api.path
     test_data = request.POST.copy()         # copy request请求对象（因为原request请求对象不可更改）
-    print(test_data)
-    test_data.pop('run_button')  # 只留下输入框填写的数据，去掉带过来的id值
-    if method == 'post':
-        r = requests.post(url, data=test_data)
-        print(r)
-    if method == 'get':
-        r = requests.get(url, data=test_data)
-    result = r.json()
-    if result['mark'] == '0':
-        messages.success(request, result['message'])
-    if result['mark'] != '0':
-        messages.error(request, result['message'])
-    return render(request, 'api_detail.html', {'api': api, 'test_data': test_data})     # 输入框数据原样返回
+    test_data.pop('id')  # 只留下输入框填写的数据，去掉带过来的id值
+    test_data = test_data.get('data')
+    test_data = eval(test_data)
+    print(test_data, type(test_data))
+
+    if method == 'POST':
+        if api.content_type == 'APPLICATION/X-WWW-FROM-URLENCODED':
+            r = requests.post(url, data=test_data)
+        if api.content_type == 'JSON':
+            r = requests.post(url, json=test_data)
+    if method == 'GET':
+        r = requests.get(url, params=test_data)
+    print(r.text)
+    return HttpResponse(r.text)
+
 
 def upload_case(request):
     """批量测试HTML对应view函数"""
     return render(request, 'upload_case.html',)
 
 
-def batch_test(request):
-    """批量测试按钮触发的动作函数"""
-    if request.method == "POST":    # 请求方法为POST时，进行处理
-        myFile =request.FILES.get("myfile", None)    # 获取上传的文件，如果没有文件，则默认为None
-        if not myFile:
-            messages.error(request, "no files for upload!")
-            return render(request, 'upload_case.html')
-        destination = open(os.path.join("./case", myFile.name), 'wb+')    # 打开特定的文件进行二进制的写操作
-        for chunk in myFile.chunks():      # 分块写入文件
-            destination.write(chunk)
-        flag = True  # 标志是否有用例失败
-        p = 0  # 成功的case数量
-        f = 0  # 失败的case数量
-        rows_fail = []  # excel中失败行
-        fail_reason = []    # 失败原因
-        file = './case/'+myFile.name    # 文件路径
-        data = xlrd.open_workbook(file)
-        table = data.sheet_by_index(0)      # 读取excel sheet页
-        rows = table.nrows      # 获取当前sheet页数据行数
-        # 接口测试报告
-        report = xlwt.Workbook()
-        report_table = report.add_sheet('接口测试结果')
-        styleBlueBkg = xlwt.easyxf('pattern: pattern solid, fore_colour gray50')
-        font_color = xlwt.easyxf('font: colour_index red')
-        report_table.write(0,0,'序号', styleBlueBkg)
-        report_table.write(0, 1, '接口名称', styleBlueBkg)
-        report_table.write(0, 2, '接口URL', styleBlueBkg)
-        report_table.write(0, 3, 'message', styleBlueBkg)
-        report_table.write(0, 4, '执行结果', styleBlueBkg)
-        report_table.write(0, 5, '执行时间(s)', styleBlueBkg)
-        first_col = report_table.col(1)    # 获取列
-        second_col = report_table.col(2)
-        third_col = report_table.col(3)
-        four_col = report_table.col(5)
-        first_col.width = 256*10     # 设置列宽
-        second_col.width = 256*50
-        third_col.width = 256*10
-        four_col.width = 256*15
-        report.save('./sign/static/file/report.xls')
-        for row in range(1, rows):
-            excel_data = table.row_values(row)  # 获取当前行的数据（列表对象）
-            url = excel_data[2]
-            method = excel_data[3].lower()
-            params = excel_data[4]
-            message_assert = excel_data[5].strip()      # strip去掉首尾空格
-            start_time = datetime.datetime.now()
-            if method == 'post':
-                params = eval(params)    # excel表中的字符串转换为字典
-                r = requests.post(url, data=params)
-            if method == 'get':
-                params = eval(params)
-                r = requests.get(url, params=params)
-            end_time = datetime.datetime.now()
-            run_time = str(end_time - start_time)[6:10]
-            if method != 'post' and method != 'get':
-                messages.error(request, 'Method填写错误')
-                return render(request, 'upload_case.html')
-            result = r.json()
-            print(result['message'])
-            # 接口测试报告写入
-            report_table.write(row,0,row)
-            report_table.write(row,1,excel_data[1])
-            report_table.write(row, 2, url)
-            report_table.write(row, 3, result['message'])
-            if result['message'] == message_assert:     # 断言
-                p += 1
-                report_table.write(row, 4, 'pass')
-            else:
-                f += 1
-                rows_fail.append(str(row + 1))
-                fail_reason.append(result['message'])
-                report_table.write(row, 4, 'fail', font_color)
-            report_table.write(row, 5, run_time)
-            report.save('./sign/static/file/report.xls')
-        tips = {'成功': p, '失败': f, '失败行数': (','.join(rows_fail) or '无'), '失败原因': (','.join(fail_reason) or '无')}
-        if f != 0:
-            flag = False
-        if flag:    # 根据flag判断message是success还是error（任意一行失败则为失败）
-            messages.success(request, tips)
-            return render(request, 'upload_case.html')
-        else:
-            messages.error(request, tips)
-            return render(request, 'upload_case.html')
+def schedule_run(request):
+    ids = request.POST.get('ids', '').split(',')
+    if not ids:
+        result = {'mark': '1', 'message': '没有Schedule ID'}
+    else:
+        sequence = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        case_list = []
+        schedule_objs = Schedule.objects.filter(id__in=ids)
+
+        # 取出所有case_id
+        for schedule in schedule_objs:
+            case_list += schedule.case_ids.split(',')
+        case_ids = set(case_list)      # 设置为集合去重
+
+        # 遍历用例ID生成脚本（每个用例生成一个脚本）
+        for id in case_ids:
+            file_name = str(Case.objects.get(id=id).file_name)
+            create = Create(file_name, sequence)
+            script_name = create.make_test_script()
+            # os.system(r'python3 '+script_path)
+
+            import unittest
+            from BeautifulReport import BeautifulReport
+            case = unittest.defaultTestLoader.discover(
+                r'C:\Users\rick_zhang\Desktop\Test_Platform\sign/API_Test/api_test_case/', pattern=script_name)
+            cases += case
+            print(type(case), '\n', type(cases))
+        result = BeautifulReport(cases).report(filename='Report-temp.html', description='API-AutoTest-Report',
+                                               log_path=r'C:\Users\rick_zhang\Desktop\Test_Platform\sign//static/api_test_file/api_test_report/')
+        print(result)
+    # return HttpResponse(json.dumps(result))
+
+
+# def batch_test(request):
+#     """批量测试按钮触发的动作函数"""
+#     if request.method == "POST":    # 请求方法为POST时，进行处理
+#         myFile =request.FILES.get("myfile", None)    # 获取上传的文件，如果没有文件，则默认为None
+#         if not myFile:
+#             messages.error(request, "no files for upload!")
+#             return render(request, 'upload_case.html')
+#         destination = open(os.path.join("./case", myFile.name), 'wb+')    # 打开特定的文件进行二进制的写操作
+#         for chunk in myFile.chunks():      # 分块写入文件
+#             destination.write(chunk)
+#         flag = True  # 标志是否有用例失败
+#         p = 0  # 成功的case数量
+#         f = 0  # 失败的case数量
+#         rows_fail = []  # excel中失败行
+#         fail_reason = []    # 失败原因
+#         file = './case/'+myFile.name    # 文件路径
+#         data = xlrd.open_workbook(file)
+#         table = data.sheet_by_index(0)      # 读取excel sheet页
+#         rows = table.nrows      # 获取当前sheet页数据行数
+#         # 接口测试报告
+#         report = xlwt.Workbook()
+#         report_table = report.add_sheet('接口测试结果')
+#         styleBlueBkg = xlwt.easyxf('pattern: pattern solid, fore_colour gray50')
+#         font_color = xlwt.easyxf('font: colour_index red')
+#         report_table.write(0,0,'序号', styleBlueBkg)
+#         report_table.write(0, 1, '接口名称', styleBlueBkg)
+#         report_table.write(0, 2, '接口URL', styleBlueBkg)
+#         report_table.write(0, 3, 'message', styleBlueBkg)
+#         report_table.write(0, 4, '执行结果', styleBlueBkg)
+#         report_table.write(0, 5, '执行时间(s)', styleBlueBkg)
+#         first_col = report_table.col(1)    # 获取列
+#         second_col = report_table.col(2)
+#         third_col = report_table.col(3)
+#         four_col = report_table.col(5)
+#         first_col.width = 256*10     # 设置列宽
+#         second_col.width = 256*50
+#         third_col.width = 256*10
+#         four_col.width = 256*15
+#         report.save('./sign/static/file/report.xls')
+#         for row in range(1, rows):
+#             excel_data = table.row_values(row)  # 获取当前行的数据（列表对象）
+#             url = excel_data[2]
+#             method = excel_data[3].lower()
+#             params = excel_data[4]
+#             message_assert = excel_data[5].strip()      # strip去掉首尾空格
+#             start_time = datetime.datetime.now()
+#             if method == 'post':
+#                 params = eval(params)    # excel表中的字符串转换为字典
+#                 r = requests.post(url, data=params)
+#             if method == 'get':
+#                 params = eval(params)
+#                 r = requests.get(url, params=params)
+#             end_time = datetime.datetime.now()
+#             run_time = str(end_time - start_time)[6:10]
+#             if method != 'post' and method != 'get':
+#                 messages.error(request, 'Method填写错误')
+#                 return render(request, 'upload_case.html')
+#             result = r.json()
+#             print(result['message'])
+#             # 接口测试报告写入
+#             report_table.write(row,0,row)
+#             report_table.write(row,1,excel_data[1])
+#             report_table.write(row, 2, url)
+#             report_table.write(row, 3, result['message'])
+#             if result['message'] == message_assert:     # 断言
+#                 p += 1
+#                 report_table.write(row, 4, 'pass')
+#             else:
+#                 f += 1
+#                 rows_fail.append(str(row + 1))
+#                 fail_reason.append(result['message'])
+#                 report_table.write(row, 4, 'fail', font_color)
+#             report_table.write(row, 5, run_time)
+#             report.save('./sign/static/file/report.xls')
+#         tips = {'成功': p, '失败': f, '失败行数': (','.join(rows_fail) or '无'), '失败原因': (','.join(fail_reason) or '无')}
+#         if f != 0:
+#             flag = False
+#         if flag:    # 根据flag判断message是success还是error（任意一行失败则为失败）
+#             messages.success(request, tips)
+#             return render(request, 'upload_case.html')
+#         else:
+#             messages.error(request, tips)
+#             return render(request, 'upload_case.html')
 
 
 def test_tools(request):
