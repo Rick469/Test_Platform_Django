@@ -26,7 +26,7 @@ SECRET_KEY = '+w^b*nj_8@(e*s$05c%d7h05f$w8)o!!zk_f*=^+@rbvpvbbs='
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.4.208', '127.0.0.1', ]
+ALLOWED_HOSTS = ['112.124.32.129', '127.0.0.1', ]
 
 
 # Application definition
@@ -79,18 +79,15 @@ WSGI_APPLICATION = 'guest.wsgi.application'
 
 DATABASES = {
     'default': {
-    #     'ENGINE': 'django.db.backends.mysql',    #或者使用mysql.connector.django
-    #     'NAME': 'vivien_django',
-    #     'USER': 'vivien',
-    #     'PASSWORD': 'vivien',
-    #     'HOST': 'localhost',
-    #     'PORT': '3306',
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'django',
-        'USER': 'django',
-        'PASSWORD': 'django',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+
+        # 'ENGINE': 'django.db.backends.postgresql',
+        # 'NAME': 'django',
+        # 'USER': 'django',
+        # 'PASSWORD': 'django',
+        # 'HOST': 'localhost',
+        # 'PORT': '5432',
         },
 
 }
