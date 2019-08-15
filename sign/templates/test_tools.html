@@ -1,303 +1,321 @@
-{% extends "./admin/base_site.html" %}
-{% block title %}自动化测试平台{% endblock %}
-{% block breadcrumbs %}
+{% extends 'base_list.html' %}
 
-<div class="breadcrumbs">
-  <a href="/index/"><strong>首页</strong></a>&nbsp;&nbsp;&nbsp;&nbsp;
-      <a href="/upload_case/"><strong>批量测试</strong></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;<a href="/test_tools/"><strong>测试工具</strong></a>
+{{% block list-body %}
+
+<div class="container-fluid">
+    <div class="col-md-2 pull-left">
+        <ul class="breadcrumb">
+            <li>用例列表</li>
+        </ul>
+    </div>
 </div>
 
-{% endblock %}
-{% block content %}
-{% block branding %}
+<div class="panel">
+    <div class="panel-body">
+        <div class="form-horizontal">
+            <form action="/tools_button/" method="post" enctype="multipart/form-data" id="form-model">
 
-<h1 id="site-name">
-  <a href="/index/">自动化测试平台</a>
-</h1>
+                <div class="form-group">
+                    <div class="col-sm-12">
+                    <h3>选择环境</h3>
+                    </div>
+                    <div class="col-sm-12">
+                        <div class="col-sm-2 form-group">
+                        <select name="environment" class="form-control">
+                            {% for env in envs %}
+                                <option value="{{env}}">{{env}}</option>
+                            {% endfor %}
+                        </select>
+                        </div>
+                    </div>
+                </div>
 
-{% endblock %}
-
-<div class="header-wrapper"></div>
-    <form action="/tools_button/" method="post" enctype="multipart/form-data" id="form-model">
-        <div>
-            <tr>
-                <td>
-                    <label width="100">测试环境</label>
-                </td>
-                <td>
-                    <select name="environment">
-                        {% for env in envs %}
-                            <option value="{{env}}">{{env}}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-            </tr>
-        </div>
-        <h2>
-            生成订单
-        </h2>
-        <div>
-            <tr>
-                <td><input name="button" type="submit" value="获取Token"></td>
-            </tr>
-            <table>
-                <thead>
-                    <td class="text-left">SKU</td>
-                    <td class="text_left">数量</td>
-                </thead>
-                <tbody>
-                <tr>
-                    <td><input name="order_sku" type="text"></td>
-                    <td><input name="order_sku_quantity" type="text"></td>
-                </tr>
-                <tr>
-                    <td><input name="order_sku" type="text"></td>
-                    <td><input name="order_sku_quantity" type="text"></td>
-                    <td><input name="button" type="submit" value="生成订单"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <h2>
-            销售流程
-        </h2>
-        <div>
-            <tr>
-                <td class="text-left">外部单号</td>
-                <td>
-                    <input name="ex_no" type="text" value="{{ex_no}}">
-                </td>
-                <td><input name="button" type="submit" value="SO单号查询"></td>
-            </tr>
-        </div>
-        <div>
-            <tr>
-                <td class="text-left">SO单号</td>
-                <td>
-                    <input name="so_value" type="text" value="{{so_value}}">
-                </td>
-                <td><input name="button" type="submit" value="订单详情"></td>
-                <td><input name="button" type="submit" value="订单取消"></td>
-                <td>
-                    <input name="button" type="submit" value="财务收款">
-                </td>
-                <td>
-                    <input name="button" type="submit" value="确认订单">
-                </td>
-                <td>
-                    <input name="button" type="submit" value="分配库存">
-                </td>
-                <td>
-                    <input name="button" type="submit" value="SO查询">
-                </td>
-                <td class="text-left" width="100">
-                    <input name="button" type="submit" value="SO开票">
-                </td>
-            </tr>
-
-    {% if so_detail %}
-        <div>
-            <table>
-                <thead>
-                    <tr>
-                      <td class="text-left" width="100"><strong>SKU</strong></td>
-                      <td class="text-left " width="100"><strong>原数量</strong></td>
-                      <td class="text-left" width="100"><strong>已发货数量</strong></td>
-                      <td class="text-left" width="100"><strong>发货数量</strong></td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {%for i in so_detail%}
-                        <tr>
-                            <td class="text-left" width="100">
-                                <input name="so_sku" value={{i.sku}} readonly="readonly" >
-                            </td>
-                            <td class="text-left" width="100">
-                                <input name="y_send_qty" value="{{i.k_send_qty}}" readonly="readonly" >
-                            </td>
-                            <td class="text-left" width="100">
-                                <input name="k_send_qty" value="{{i.y_send_qty}}" readonly="readonly" >
-                            </td>
-                            <td class="text-left" width="100">
-                                <input name="so_send_qty" value="">
-                            </td>
+                <h3>
+                    生成订单
+                </h3>
+                <div class="table-responsive col-md-6">
+                    <div class="row form-group">
+                        <input name="button" type="submit" class="btn btn-primary" value="获取Token">
+                    </div>
+                    <div class="form-group">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr class="danger">
+                                <td class="text-center">SKU</td>
+                                <td class="text-center">数量</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <tr class="success">
+                            <td><input class="form-control" name="order_sku" type="text"></td>
+                            <td><input class="form-control" name="order_sku_quantity" type="text"></td>
                         </tr>
-                    {%endfor%}
-                    <tr>
-                        <td class="text-left" width="100">
-                            <input name="so_send_no" placeholder="发货单号" value="">
-                        </td>
-                        <td></td>
-                        <td style="text-align:right;">
-                            <input name="button" type="submit" value="SO全部发货">
-                        </td>
-                        <td style="text-align:right;">
-                            <input name="button" type="submit" value="SO发货">
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
+                        <tr class="success">
+                            <td><input class="form-control" name="order_sku" type="text"></td>
+                            <td><input class="form-control" name="order_sku_quantity" type="text"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <input name="button" type="submit" class="btn btn-primary pull-right" value="生成订单">
 
-        <h2>
-            采购流程
-        </h2>
-        <div>
-            <td class="text-left">SO单号</td>
-            <td>
-                <input name="so_po_value" type="text" value="{{so_po_value}}">
-            </td>
-            <td>
-                <input name="button" type="submit" value="生成PO">
-            </td>
-        </div>
-        <div>
-            <td class="text-left">PO单号</td>
-            <td>
-                <input name="po_value" type="text" value="{{po_value}}">
-            </td>
-            <td>
-                <input name="button" type="submit" value="西域确认PO">
-            </td>
-            <td>
-                <input name="button" type="submit" value="直发转非直发">
-            </td>
-            <td>
-                <input name="button" type="submit" value="供应商确认">
-            </td>
-            <td>
-                <input name="button" type="submit" value="PO查询">
-            </td>
-        </div>
+                </div>
+                </div>
 
-    {% if po_detail %}
-        <div>
-            <table>
-                <thead>
-                    <tr>
-                      <td class="text-left" width="100"><strong>SKU</strong></td>
-                      <td class="text-left " width="100"><strong>采购数量</strong></td>
-                      <td class="text-left" width="100"><strong>已发货数量</strong></td>
-                      <td class="text-left" width="100"><strong>发货数量</strong></td>
-                    </tr>
-                </thead>
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <h3>
+                            销售流程
+                        </h3>
+                    </div>
+                    <div class="col-sm-12">
+                        <label class="control-label col-sm-1">外部单号</label>
+                            <div class="col-sm-2">
+                                <input class="form-control" name="ex_no" type="text" value="{{ex_no}}">
+                            </div>
+                        <input name="button" type="submit" class="btn btn-primary" value="SO单号查询">
+                    </div>
+                </div>
 
-                <tbody>
-                {%for i in po_detail%}
-                    <tr>
-                        <td class="text-left" width="100">
-                            <input name="sku" value={{i.sku}} readonly="readonly" >
-                        </td>
-                        <td class="text-left" width="100">
-                            <input name="qty" value="{{i.qty}}" readonly="readonly" >
-                        </td>
-                        <td class="text-left" width="100">
-                            <input name="send_qty" value="{{i.send_qty}}" readonly="readonly" >
-                        </td>
-                        <td class="text-left" width="100">
-                            <input name="pre_send_qty" value="">
-                        </td>
-                    </tr>
-                {%endfor%}
-                <tr>
-                    <td class="text-left" width="100">
-                        <input name="send_company" placeholder="物流公司" value="">
-                    </td>
-                    <td class="text-left" width="100">
-                        <input name="send_no" placeholder="发货单号" value="">
-                    </td>
-                    <td style="text-align:right;">
-                        <input name="button" type="submit" value="PO发货">
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <label class="control-label col-sm-1">SO单号</label>
+                            <div class="col-sm-2">
+                                <input class="form-control" name="so_value" type="text" value="{{so_value}}">
+                            </div>
 
-        <h2>
-            销售售后流程
-        </h2>
-        <div>
-            <tr>
-                <td class="text_left">售后类型</td>
-                <select name="cs_type">
-                    {% if cs_type %}
-                        <option value="{{cs_type}}">{{cs_type}}</option>
-                        <option value="{{cs_type_other}}">{{cs_type_other}}</option>
-                        <option value="{{cs_type_another}}">{{cs_type_another}}</option>
-                        <!--<option value="请选择">请选择</option>-->
-                        <!--<option value="取消">取消</option>-->
-                        <!--<option value="退货">退货</option>-->
-                    {% else %}
-                        <option value="请选择">请选择</option>
-                        <option value="取消">取消</option>
-                        <option value="退货">退货</option>
-                    {% endif %}
-                </select>
-            </tr>
-        </div>
-        <div>
-            <tr>
-                <td class="text_left">SO单号</td>
-                <td><input name="so_cs_value" type="text" value="{{so_cs}}"></td>
-                <td><input name="button" type="submit" value="SO售后申请查询"></td>
-            </tr>
-        </div>
-        {% if available_cs_detail %}
-        <div>
-            <table>
-                <thead>
-                <tr>
-                    <td class="text_left"><strong>SKU</strong></td>
-                    <td class="text_left"><strong>允许申请的数量</strong></td>
-                    <td class="text_left"><strong>处理数量</strong></td>
-                </tr>
-                </thead>
-                <tbody>
-                {% for i in available_cs_detail %}
-                    <tr>
-                        <td><input name="order_available_sku" type="text" value="{{i.sku_code}}"></td>
-                        <td><input name="sku_available_handle" type="text" value="{{i.avaliable_cancle_num}}"></td>
-                        <td><input name="sku_handle_num" type="text" value="{{i.sku_handle_num}}"></td>
-                    </tr>
-                {% endfor %}
-                <td><input name="button" type="submit" value="提交售后申请单"></td>
-                </tbody>
+                            <input name="button" type="submit" class="btn btn-primary" value="订单详情">
 
-            </table>
-        </div>
-        {% endif %}
-        <div>
-            <tr>
-                <td class="text-left">售后单号</td>
-                <td class="text-left" width="100">
-                    <input name="cs_no" type="text" value="{{cs_no}}">
-                </td>
-                <td class="text-left" width="100">
-                    <input name="button" type="submit" value="售后确认">
-                    <input name="button" type="submit" value="售后完结">
-                    <input name="button" type="submit" value="售后作废">
-                </td>
-            </tr>
-        </div>
+                            <input name="button" type="submit" class="btn btn-primary" value="订单取消">
 
-        <h2>
-            查询/更新ODOO库存
-        </h2>
-        <div>
-            <tr>
-                <td>Odoo库存</td>
-            </tr>
-            <tr>
-                <input name="sku_stock" type="text" value="{{sku_stock}}" placeholder="SKU">
-                <input name="qty_stock" value="{{qty_stock}}" placeholder="数量">
-                <input name="button" type="submit" value="查询">
-                <input name="button" type="submit" value="更新">
-            </tr>
-        </div>
-    </form>
+                            <input name="button" type="submit" class="btn btn-primary" value="财务收款">
 
+                            <input name="button" type="submit" class="btn btn-primary" value="确认订单">
+
+                            <input name="button" type="submit" class="btn btn-primary" value="分配库存">
+
+                            <input name="button" type="submit" class="btn btn-primary" value="SO查询">
+
+                            <input name="button" type="submit" class="btn btn-primary" value="SO开票">
+
+                    </div>
+                </div>
+
+            {% if so_detail %}
+                <div class="col-md-8 form-group">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr class="danger">
+                              <td class="text-left" width="100"><strong>SKU</strong></td>
+                              <td class="text-left " width="100"><strong>原数量</strong></td>
+                              <td class="text-left" width="100"><strong>已发货数量</strong></td>
+                              <td class="text-left" width="100"><strong>发货数量</strong></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {%for i in so_detail%}
+                                <tr class="success">
+                                    <td class="text-left" width="100">
+                                        <input class="form-control" name="so_sku" value={{i.sku}} readonly="readonly" >
+                                    </td>
+                                    <td class="text-left" width="100">
+                                        <input class="form-control" name="y_send_qty" value="{{i.k_send_qty}}" readonly="readonly" >
+                                    </td>
+                                    <td class="text-left" width="100">
+                                        <input class="form-control" name="k_send_qty" value="{{i.y_send_qty}}" readonly="readonly" >
+                                    </td>
+                                    <td class="text-left" width="100">
+                                        <input class="form-control" name="so_send_qty" value="">
+                                    </td>
+                                </tr>
+                            {%endfor%}
+
+                        </tbody>
+
+                    </table>
+                    <div class="form-group col-sm-3">
+                        <input class="form-control" name="so_send_no" placeholder="发货单号" value="">
+                    </div>
+                    <div class="form-group col-sm-9 pull-right">
+                        <div class="pull-right">
+                            <input name="button" type="submit" class="btn btn-primary" value="SO全部发货">
+                            <input name="button" type="submit" class="btn btn-primary" value="SO发货">
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+
+        {#        <h3>#}
+        {#            采购流程#}
+        {#        </h3>#}
+        {#        <div>#}
+        {#            <td class="text-left">SO单号</td>#}
+        {#            <td>#}
+        {#                <input name="so_po_value" type="text" value="{{so_po_value}}">#}
+        {#            </td>#}
+        {#            <td>#}
+        {#                <input name="button" type="submit" class="btn btn-primary" value="生成PO">#}
+        {#            </td>#}
+        {#        </div>#}
+        {#        <div>#}
+        {#            <td class="text-left">PO单号</td>#}
+        {#            <td>#}
+        {#                <input name="po_value" type="text" value="{{po_value}}">#}
+        {#            </td>#}
+        {#            <td>#}
+        {#                <input name="button" type="submit" class="btn btn-primary" value="西域确认PO">#}
+        {#            </td>#}
+        {#            <td>#}
+        {#                <input name="button" type="submit" class="btn btn-primary" value="直发转非直发">#}
+        {#            </td>#}
+        {#            <td>#}
+        {#                <input name="button" type="submit" class="btn btn-primary" value="供应商确认">#}
+        {#            </td>#}
+        {#            <td>#}
+        {#                <input name="button" type="submit" class="btn btn-primary" value="PO查询">#}
+        {#            </td>#}
+        {#        </div>#}
+        {##}
+        {#    {% if po_detail %}#}
+        {#        <div>#}
+        {#            <table>#}
+        {#                <thead>#}
+        {#                    <tr>#}
+        {#                      <td class="text-left" width="100"><strong>SKU</strong></td>#}
+        {#                      <td class="text-left " width="100"><strong>采购数量</strong></td>#}
+        {#                      <td class="text-left" width="100"><strong>已发货数量</strong></td>#}
+        {#                      <td class="text-left" width="100"><strong>发货数量</strong></td>#}
+        {#                    </tr>#}
+        {#                </thead>#}
+        {##}
+        {#                <tbody>#}
+        {#                {%for i in po_detail%}#}
+        {#                    <tr>#}
+        {#                        <td class="text-left" width="100">#}
+        {#                            <input name="sku" value={{i.sku}} readonly="readonly" >#}
+        {#                        </td>#}
+        {#                        <td class="text-left" width="100">#}
+        {#                            <input name="qty" value="{{i.qty}}" readonly="readonly" >#}
+        {#                        </td>#}
+        {#                        <td class="text-left" width="100">#}
+        {#                            <input name="send_qty" value="{{i.send_qty}}" readonly="readonly" >#}
+        {#                        </td>#}
+        {#                        <td class="text-left" width="100">#}
+        {#                            <input name="pre_send_qty" value="">#}
+        {#                        </td>#}
+        {#                    </tr>#}
+        {#                {%endfor%}#}
+        {#                <tr>#}
+        {#                    <td class="text-left" width="100">#}
+        {#                        <input name="send_company" placeholder="物流公司" value="">#}
+        {#                    </td>#}
+        {#                    <td class="text-left" width="100">#}
+        {#                        <input name="send_no" placeholder="发货单号" value="">#}
+        {#                    </td>#}
+        {#                    <td style="text-align:right;">#}
+        {#                        <input name="button" type="submit" class="btn btn-primary" value="PO发货">#}
+        {#                    </td>#}
+        {#                </tr>#}
+        {#                </tbody>#}
+        {#            </table>#}
+        {#        </div>#}
+        {#    {% endif %}#}
+                <div class="form-group col-sm-12">
+                    <h3>
+                        销售售后流程
+                    </h3>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <label class="control-label col-sm-1">售后类型</label>
+                        <div class="col-sm-2">
+                            <select name="cs_type" class="form-control">
+                        {% if cs_type %}
+                            <option value="{{cs_type}}">{{cs_type}}</option>
+                            <option value="{{cs_type_other}}">{{cs_type_other}}</option>
+                            <option value="{{cs_type_another}}">{{cs_type_another}}</option>
+                            <!--<option value="请选择">请选择</option>-->
+                            <!--<option value="取消">取消</option>-->
+                            <!--<option value="退货">退货</option>-->
+                        {% else %}
+                            <option value="请选择">请选择</option>
+                            <option value="取消">取消</option>
+                            <option value="退货">退货</option>
+                        {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <label class="control-label col-sm-1">SO单号</label>
+                        <div class="col-sm-2">
+                            <input class="form-control" name="so_cs_value" type="text" value="{{so_cs}}">
+                        </div>
+                        <input name="button" type="submit" class="btn btn-primary" value="SO售后申请查询">
+                    </div>
+                </div>
+
+                {% if available_cs_detail %}
+                <div class="form-group col-sm-8">
+                    <table class="table table-bordered">
+                        <thead>
+                        <tr class="danger">
+                            <td class="text-center"><strong>SKU</strong></td>
+                            <td class="text-center"><strong>允许申请的数量</strong></td>
+                            <td class="text-center"><strong>处理数量</strong></td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for i in available_cs_detail %}
+                            <tr class="success">
+                                <td><input class="form-control" name="order_available_sku" type="text" value="{{i.sku_code}}"></td>
+                                <td><input class="form-control" name="sku_available_handle" type="text" value="{{i.avaliable_cancle_num}}"></td>
+                                <td><input class="form-control" name="sku_handle_num" type="text" value="{{i.sku_handle_num}}"></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <input name="button" type="submit" class="btn btn-primary pull-right" value="提交售后申请单">
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <label class="control-label col-sm-1">售后单号</label>
+                        <div class="col-sm-2">
+                            <input class="form-control" name="cs_no" type="text" value="{{cs_no}}">
+                        </div>
+                        <input name="button" type="submit" class="btn btn-primary" value="售后确认">
+                        <input name="button" type="submit" class="btn btn-primary" value="售后完结">
+                        <input name="button" type="submit" class="btn btn-primary" value="售后作废">
+                    </div>
+                </div>
+
+                <div class="form-group col-sm-12">
+                    <h3>
+                        查询/更新ODOO库存
+                    </h3>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <div class="col-sm-2 form-group">
+                            <input class="form-control" name="sku_stock" type="text" value="{{sku_stock}}" placeholder="SKU">
+                        </div>
+                        <div class="col-sm-2">
+                            <input class="form-control" name="qty_stock" value="{{qty_stock}}" placeholder="数量">
+                        </div>
+                        <input name="button" type="submit" class="btn btn-primary" value="查询">
+                        <input name="button" type="submit" class="btn btn-primary" value="更新">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
+
+

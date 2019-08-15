@@ -39,7 +39,11 @@ urlpatterns = [
     url(r'^schedule/add/', views.schedule_add),
     url(r'^schedule/list/filter/', views.schedule_list_filter),
     url(r'^schedule/list/', views.schedule_list),
+    url(r'^schedule/delete/', views.schedule_delete),
     url(r'^schedule/run/', views.schedule_run),
     url(r'^dependency/list/filter/', views.deependency_list_filter),
     url(r'^dependency/list/', views.deependency_list),
+    url(r'^api/report/', views.api_report),
+    url(r'^test_tools/', views.test_tools),
+    url(r'^tools_button/', views.tools_button),
 ]

@@ -28,7 +28,7 @@ class apis(models.Model):
 
 class Case(models.Model):
     id = models.AutoField('ID', max_length=5, primary_key=True)
-    name = models.CharField('用例名称', max_length=20)
+    name = models.CharField('用例名称', max_length=200)
     belong_project = models.CharField('所属项目', max_length=20, choices=(('OC', 'OC'), ('PC', 'PC'), ('UC', 'UC'), ('SP', 'SP'), ('Odoo', 'Odoo')), default='OC')
     description = models.CharField(max_length=200)
     file_name = models.FileField('文件名', null=True)
@@ -52,10 +52,22 @@ class Schedule(models.Model):
     env = models.CharField('环境', max_length=20)
     case_ids = models.CharField('用例ID', max_length=500)
     last_do_time = models.DateTimeField('上次执行时间', null=True)
-    # schedule_time = models.DateTimeField('计划时间')
-    schedule_status = models.CharField('执行状态', max_length=10, default='待执行')
-    do_times = models.CharField('执行次数',max_length=10, default='0')
+    schedule_status = models.CharField('执行状态', max_length=10, default='未执行')
+    do_times = models.IntegerField('执行次数', default=0)
     status = models.BooleanField('状态', default=True)
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
 
+
+class RunRecord(models.Model):
+    # 执行记录表
+    id = models.AutoField('ID', max_length=5, primary_key=True)
+    schedule_ids = models.CharField('执行任务ID', max_length=500)
+    total_count = models.IntegerField('用例总数', default=0)
+    success_count = models.IntegerField('成功数', default=0)
+    fail_count = models.IntegerField('失败数', default=0)
+    spend_time = models.CharField('执行时间', max_length=50)
+    schedule_result = models.CharField('执行结果', max_length=20, choices=(('Success', '成功'), ('Fail', '失败')))
+    sequence = models.CharField('执行序列号', max_length=100, null=True)
+    create_time = models.DateTimeField('创建时间', auto_now_add=True)
+    update_time = models.DateTimeField('更新时间', auto_now=True)

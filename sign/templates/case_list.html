@@ -8,6 +8,7 @@
             <li><a href="/api/list/" class="">接口列表</a></li>
             <li><a href="/case/list/" class="active">用例列表</a></li>
             <li><a href="/schedule/list/" class="">测试任务</a></li>
+            <li><a href="/api/report/" class="">测试报告</a></li>
             <li><a href="/dependency/list/" class="">全局参数</a></li>
         </ul>
     </div>
@@ -17,7 +18,7 @@
 {% block list-body %}
 
     <div class="container-fluid">
-        <div class="col-md-1 pull-left">
+        <div class="col-md-2 pull-left">
             <ul class="breadcrumb">
                 <li>用例列表</li>
             </ul>
@@ -142,8 +143,7 @@
                             '                <div class="form-group" style="display: none">\n' +
                             '                    <label class="control-label col-md-2">用例ID</label>\n' +
                             '                    <div class="col-md-8">\n' +
-                            '                        <input class="form-control" name="case_ids" value="' +
-                            case_ids+'                    ">\n' +
+                            '                        <input class="form-control" name="case_ids" value="' + case_ids+'">\n' +
                             '                    </div>\n' +
                             '                </div>\n' +
                             '                <div class="form-group">\n' +
@@ -189,7 +189,7 @@
         var schedule_name = form.get('schedule_name');
         var schedule_env = form.get('schedule_env');
         {#var schedule_time = form.get('schedule_time');#}
-        console.log(schedule_name, schedule_env, schedule_time);
+        console.log(schedule_name, schedule_env);
 
         if (!(schedule_name && schedule_env)){
             alert('数据填写不完整，请检查！');

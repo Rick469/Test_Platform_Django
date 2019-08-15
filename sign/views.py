@@ -1,7 +1,7 @@
 # coding:utf-8
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
-from sign.models import apis, Case, Dependency, Schedule
+from sign.models import apis, Case, Dependency, Schedule, RunRecord
 import requests, xlrd,xlwt, json, os
 from django.core.paginator import Paginator
 from django.core import serializers
@@ -31,7 +31,7 @@ def api_list(request):
     """接口列表页"""
     flag = request.GET.get('flag', '')
     message = request.GET.get('message', '')
-    api_obj = apis.objects.all().order_by('id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+    api_obj = apis.objects.all().order_by('-id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
 
     page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
     result = paginate(api_obj, page)
@@ -51,7 +51,7 @@ def api_list_filter(request):
     api_belong_project = request.GET.get('search_belong_project', '')
     origin_data = {'api_address': api_address, 'api_name': api_name, 'api_belong_project': api_belong_project}
 
-    api_list = apis.objects.filter(path__contains=api_address, name__contains=api_name, belong_project__contains=api_belong_project).order_by('id')
+    api_list = apis.objects.filter(path__contains=api_address, name__contains=api_name, belong_project__contains=api_belong_project).order_by('-id')
     print(api_list)
     page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
     result = paginate(api_list, page)
@@ -143,7 +143,7 @@ def case_list(request):
     flag = request.GET.get('flag', '')
     message = request.GET.get('message', '')
 
-    cases_obj = Case.objects.all().order_by('id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+    cases_obj = Case.objects.all().order_by('-id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
 
     page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
     result = paginate(cases_obj, page)
@@ -161,7 +161,7 @@ def case_list(request):
 #     # page_size = json_request.get('page_size', 1)
 #     page = request.GET.get('page', 1)
 #     page_size = request.GET.get('page_size', 1)
-#     cases = Case.objects.all().order_by('id')
+#     cases = Case.objects.all().order_by('-id')
 #     paginator = Paginator(cases, page_size)
 #     total_pages = paginator.num_pages
 #     case_list = paginator.page(page).object_list
@@ -182,7 +182,7 @@ def case_list_filter(request):
     case_desc = request.GET.get('search_desc', '')
     case_name = request.GET.get('search_name', '')
     origin_data = {'case_desc': case_desc, 'case_name': case_name}
-    case_list = Case.objects.filter(description__contains=case_desc, name__contains=case_name).order_by('id')
+    case_list = Case.objects.filter(description__contains=case_desc, name__contains=case_name).order_by('-id')
     print(case_list)
     page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
     result = paginate(case_list, page)
@@ -263,7 +263,7 @@ def schedule_list(request):
     flag = request.GET.get('flag', '')
     message = request.GET.get('message', '')
 
-    schedule_obj = Schedule.objects.all().order_by('id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+    schedule_obj = Schedule.objects.all().order_by('-id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
 
     page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
     result = paginate(schedule_obj, page)
@@ -280,7 +280,7 @@ def schedule_list_filter(request):
     schedule_status = request.GET.get('search_schedule_status', '')
     origin_data = {'env': env, 'name': name, 'schedule_status': schedule_status}
 
-    schedule_list = Schedule.objects.filter(env__contains=env, name__contains=name, schedule_status__contains=schedule_status).order_by('id')
+    schedule_list = Schedule.objects.filter(env__contains=env, name__contains=name, schedule_status__contains=schedule_status).order_by('-id')
     page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
     result = paginate(schedule_list, page)
     result.update({'origin_data': origin_data})
@@ -300,12 +300,24 @@ def schedule_add(request):
         return HttpResponseRedirect('/case/list/?flag=success&message=添加成功')
 
 
+def schedule_delete(request):
+    id = request.GET.get('id')
+    schedule = Schedule.objects.get(id=id)
+    try:
+        schedule.delete()
+    except Exception as e:
+        print(e)
+        return HttpResponseRedirect('/schedule/list/?flag=fail&message=删除失败： internal error')
+    else:
+        return HttpResponseRedirect('/schedule/list/?flag=success&message=删除成功')
+
+
 def deependency_list(request):
     # 若是HttpResponseRedirect到此页面则有flag和message，相应显示出来；直接访问没有该值
     flag = request.GET.get('flag', '')
     message = request.GET.get('message', '')
 
-    dependency_obj = Dependency.objects.all().order_by('id')   # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+    dependency_obj = Dependency.objects.all().order_by('-id')   # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
 
     page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
     result = paginate(dependency_obj, page)
@@ -321,7 +333,7 @@ def deependency_list_filter(request):
     value = request.GET.get('search_value', '')
     origin_data = {'param': param, 'value': value}
 
-    dependency_list = Dependency.objects.filter(param__contains=param, value__contains=value).order_by('id')
+    dependency_list = Dependency.objects.filter(param__contains=param, value__contains=value).order_by('-id')
     page = request.GET.get('page', 1)       # 取请求的页码，默认值为首页1
     result = paginate(dependency_list, page)
     result.update({'origin_data': origin_data})
@@ -363,31 +375,76 @@ def schedule_run(request):
         result = {'mark': '1', 'message': '没有Schedule ID'}
     else:
         sequence = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        case_list = []
         schedule_objs = Schedule.objects.filter(id__in=ids)
 
-        # 取出所有case_id
+        case_done = []  # 已生成scripts的case_id列表
+        # 循环所有执行任务对象
         for schedule in schedule_objs:
-            case_list += schedule.case_ids.split(',')
-        case_ids = set(case_list)      # 设置为集合去重
+            # 更新任务表"上次执行时间"和"执行次数字段"
+            schedule.last_do_time = datetime.datetime.now()
+            schedule.do_times = schedule.do_times + 1
+            schedule.schedule_status = '已执行'
+            schedule.save()
 
-        # 遍历用例ID生成脚本（每个用例生成一个脚本）
-        for id in case_ids:
-            file_name = str(Case.objects.get(id=id).file_name)
-            create = Create(file_name, sequence)
-            script_name = create.make_test_script()
-            # os.system(r'python3 '+script_path)
+            # 获取schedule的env(接口测试执行环境）值
+            env = schedule.env
 
-            import unittest
-            from BeautifulReport import BeautifulReport
-            case = unittest.defaultTestLoader.discover(
-                r'C:\Users\rick_zhang\Desktop\Test_Platform\sign/API_Test/api_test_case/', pattern=script_name)
-            cases += case
-            print(type(case), '\n', type(cases))
-        result = BeautifulReport(cases).report(filename='Report-temp.html', description='API-AutoTest-Report',
+            # 取出所有case_id
+            case_ids = schedule.case_ids.split(',')
+
+            # 遍历用例ID生成脚本（每个用例生成一个脚本）
+            for id in case_ids:
+
+                # 该case在其他schedule中已经生成过脚本则无需重复生成
+                if id in case_done:
+                    continue
+
+                # 未生成脚步的需要生成,同时添加id到已生成列表case_done
+                else:
+                    file_name = str(Case.objects.get(id=id).file_name)
+                    create = Create(file_name, sequence)
+                    script_name = create.make_test_script(env)
+
+                    # 添加case_id到已生成列表case_done
+                    case_done.append(id)
+        print('--------------已生成脚本case_id:----------------', '\n', case_done)
+
+        import unittest
+        from BeautifulReport import BeautifulReport
+        pattern = 'test_'+sequence+'*.py'
+        suit = unittest.defaultTestLoader.discover(
+            r'C:\Users\rick_zhang\Desktop\Test_Platform\sign/API_Test/api_test_case/', pattern=pattern)
+        result = BeautifulReport(suit).report(filename=sequence+'Report.html', description='API-AutoTest-Report',
                                                log_path=r'C:\Users\rick_zhang\Desktop\Test_Platform\sign//static/api_test_file/api_test_report/')
-        print(result)
-    # return HttpResponse(json.dumps(result))
+        r = {'message': '执行完毕，请查看测试报告'}
+
+        # 创建执行记录
+        schedule_ids = ','.join(list(case_ids))
+        schedule_result = 'Success'
+        if result['testFail'] != 0:
+            schedule_result = 'Fail'
+        totalTime = result['totalTime']
+        total_count = result['testAll']
+        success_count = result['testPass']
+        fail_count = result['testFail']
+        record = RunRecord.objects.create(schedule_ids=schedule_ids, total_count= total_count, success_count=success_count, fail_count=fail_count, spend_time=totalTime, schedule_result=schedule_result, sequence=sequence)
+    return HttpResponse(json.dumps(r))
+
+
+def api_report(request):
+    flag = request.GET.get('flag', '')
+    message = request.GET.get('message', '')
+
+    record_obj = RunRecord.objects.all().order_by('-id')  # 通过objects这个模型管理器的all()获得apis表中所有数据行，相当于SQL中的SELECT * FROM
+
+    page = request.GET.get('page', 1)  # 取请求的页码，默认值为首页1
+    result = paginate(record_obj, page)
+
+    if flag and message:
+        result.update({'flag': flag, 'message': message})
+        return render(request, 'api_report.html', result)
+    else:
+        return render(request, 'api_report.html', result)
 
 
 # def batch_test(request):
@@ -480,6 +537,7 @@ def test_tools(request):
     envs = ['staging', 'test', 'test2', 'test3', 'test4', 'test5', 'test6']
     return render(request, 'test_tools.html', {'envs': envs})
 
+
 def tools_button(request):
     """测试工具页button对应处理函数"""
     env = request.POST.get('environment')   # 获取选择的测试环境
@@ -521,16 +579,20 @@ def tools_button(request):
         # print(result)
     if action == '生成订单':    # test_tools模块对应函数
         token = request.session.get('token', '')
+        print(token)
         if not token:
-            messages.error(request, 'No Token')
+            flag = {'flag': 'fail', 'message': 'No Token'}
+            bring_back_vals.update(flag)
             return render(request, 'test_tools.html', bring_back_vals)
         result = tt.create_order(token)
         print(result)
         if result['mark'] == '0':
-            messages.success(request, result['data']['orderId'])
+            flag = {'flag': 'success', 'message': result['data']['orderId']}
+            bring_back_vals.update(flag)
             return render(request, 'test_tools.html', bring_back_vals)
         else:
-            messages.error(request, result['message'])
+            flag = {'flag': 'fail', 'message': result['message']}
+            bring_back_vals.update(flag)
             return render(request, 'test_tools.html', bring_back_vals)
     if action == 'SO单号查询':
         ex_no = request.POST.get('ex_no', '')
@@ -539,21 +601,19 @@ def tools_button(request):
     if action == '订单详情':
         token = request.session.get('token', '')
         if not token:
-            messages.error(request, 'No Token')
+            flag = {'flag': 'fail', 'message': 'No Token'}
+            bring_back_vals.update(flag)
             return render(request, 'test_tools.html', bring_back_vals)
         result = tt.order_detail(token)
         if result['mark'] == '0':
-            messages.success(request, json.dumps(result))
+            flag = {'flag': 'success', 'message': json.dumps(result)}
+            bring_back_vals.update(flag)
             return render(request, 'test_tools.html', bring_back_vals)
         else:
-            messages.error(request, result['message'])
+            flag = {'flag': 'fail', 'message': result['message']}
+            bring_back_vals.update(flag)
             return render(request, 'test_tools.html', bring_back_vals)
     if action == '订单取消':
-        # token = request.session.get('token')
-        # if not token:
-        #     messages.error(request, 'No token')
-        #     return render(request, 'test_tools.html',bring_back_vals)
-        # result = tt.order_cancel(token)
          result = tt.order_cancel()
     if action == '财务收款':
         result = tt.order_payed()
@@ -605,8 +665,9 @@ def tools_button(request):
                 return str(obj)
         if result['mark'] == '0':
             if result['available_cs_detail'] == []:
-                messages.success(request, result['message']+'，没有可申请取消或退货的商品')
-                return render(request, 'test_tools.html' , bring_back_vals)
+                flag = {'flag': 'fail', 'message': result['message']+'，没有可申请取消或退货的商品'}
+                bring_back_vals.update(flag)
+                return render(request, 'test_tools.html', bring_back_vals)
             else:
                 bring_back_vals.update({'available_cs_detail':result['available_cs_detail']})
                 available_cs_detail = json.dumps(result['available_cs_detail'], default=MyDefault)  #转化成json格式
@@ -644,10 +705,12 @@ def tools_button(request):
         sku_stock = request.POST.get('sku_stock', '')
         bring_back_vals.update({'sku_stock': sku_stock})
     if result['mark'] == '0':   # 接口返回mark为0表示成功
-        messages.success(request, result['message'] + '    ' + other)
+        flag = {'flag': 'success', 'message': result['message'] + '    ' + other}
+        bring_back_vals.update(flag)
         return render(request, 'test_tools.html', bring_back_vals)
     if result['mark'] != '0':   # 接口返回的mark参数不为'0'则提示错误信息
-        messages.error(request, result['message'])
+        flag = {'flag': 'fail', 'message': result['message']}
+        bring_back_vals.update(flag)
         return render(request, 'test_tools.html', bring_back_vals)
 
 
