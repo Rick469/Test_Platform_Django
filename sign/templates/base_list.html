@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block main-content %}
+    {% if flag == 'success' %}
+        <div id="alert" class="alert alert-success alert-dismissable" width="20"><button type="button" class="close" data-dismiss="alert">×</button>{{ message }}</div>
+    {% endif %}
+    {% if flag == 'fail' %}
+        <div id="alert" class="alert alert-danger alert-dismissable" width="20"><button type="button" class="close" data-dismiss="alert">×</button>{{ message }}</div>
+    {% endif %}
+
+    {% block list-body %}
+    {% endblock %}
+<div style="text-align: right">
+    <ul id="page"></ul>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+//  分页
+$('#page').bootstrapPaginator({
+    currentPage: {{ current_page }},
+    totalPages: {{ total_pages }},
+    size: "normal",
+    bootstrapMajorVersion: 3,
+    alignment: "right",
+    numberOfPages: 5,
+
+    pageUrl: function (type, page, current) {
+        var el = $("[name^='search_']");
+        var path = '';
+        for(var i=0; i<el.length; i++){
+            var v = el[i].getAttribute('value')
+            if(v){
+                path += '&'+el[i].getAttribute('name')+'='+v
+            }
+        }
+        return "./?page="+page+path;
+    }
+})
+</script>
+
+<script>
+// 筛选器重置按钮
+    function btn_reset() {
+        $("[name^='search_']").val('');  //[att*=val] ----内容包含 [att^=val] ----开头匹配 [att$=val] ----结尾匹配
+    }
+</script>
+
+    {% block base_list_script %}
+    {% endblock %}
+
+{% endblock %}

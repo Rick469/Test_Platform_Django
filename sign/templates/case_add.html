@@ -1,0 +1,84 @@
+{% extends './base.html' %}
+{% block main-content %}
+
+<ul class="breadcrumb">
+    <li><a href="/case/list/">用例列表</a> </li>
+    <li>添加用例</li>
+</ul>
+
+<div class="panel">
+    <div class="panel-heading">
+        <h3 class="panel-title">添加用例</h3>
+    </div>
+    <div class="panel-body">
+        <div class="form-horizontal">
+            <form action="/case/add/save/" enctype="multipart/form-data" method="post" onsubmit="return check()" id="case_add_form">
+                <div class="form-group">
+                    <label class="control-label col-md-2">用例名称</label>
+                    <div class="col-md-6">
+                        <input class="form-control" name="case_name">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="control-label col-md-2">所属项目</label>
+                    <div class="col-md-6">
+                        <select class="form-control" name="case_belong_project" id="belong_project">
+                            <option value="">请选择</option>
+                            <option value="OC">OC</option>
+                            <option value="PC">PC</option>
+                            <option value="UC">UC</option>
+                            <option value="SP">SP</option>
+                            <option value="Odoo">Odoo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="control-label col-md-2">用例描述</label>
+                    <div class="col-md-6" id="params">
+                        <textarea name="case_desc" id="textarea" class="form-control" placeholder='' rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="control-label col-md-2">上传用例</label>
+                    <div class="col-md-6">
+                        <input name="case_file" type="file">
+                    </div>
+                </div>
+                <div class="container col-md-5 pull-left" >
+                    <button type="submit" class="btn btn-primary pull-right">保存</button>
+                </div>
+            </form>
+
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block script %}
+<script>
+    function check() {
+        var form = new FormData(document.getElementById("case_add_form"));
+        var case_name = form.get('case_name');
+        var case_desc = form.get('case_desc');
+        var case_file = form.get('case_file');
+        var case_belong_project = form.get('case_belong_project');
+        console.log(case_name, case_desc, case_file)
+        tag_div = $("#alert")
+        if(tag_div) {
+            tag_div.remove()
+        }
+        console.log(case_file.size)
+        if (!(case_name && case_desc && case_file.size!=0 && case_belong_project)){
+            danger_div = '<div id="alert" class="alert alert-danger alert-dismissable" width="20"><button type="button" class="close" data-dismiss="alert">×</button>必填项不能为空</div>'
+            $('.breadcrumb').before(danger_div)
+            return false
+        }
+        else {
+            return true
+        }
+    }
+</script>
+{% endblock %}

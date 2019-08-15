@@ -1,0 +1,155 @@
+{% extends './base.html' %}
+{% block main-content %}
+
+<ul class="breadcrumb">
+    <li><a href="/api/list/">接口列表</a> </li>
+    <li>添加接口</li>
+</ul>
+
+<div class="panel">
+    <div class="panel-heading">
+        <h3 class="panel-title">添加接口</h3>
+    </div>
+    <div class="panel-body">
+        <div class="form-horizontal">
+            <form action="/api/add/save/" method="post" onsubmit="return check()" id="api_add_form">
+                <div class="form-group">
+                    <label class="control-label col-md-2">接口名称</label>
+                    <div class="col-md-6">
+                        <input class="form-control" name="api_name">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="control-label col-md-2">所属项目</label>
+                    <div class="col-md-6">
+                        <select class="form-control" name="api_belong_project">
+                            <option value="">请选择</option>
+                            <option value="OC">OC</option>
+                            <option value="PC">PC</option>
+                            <option value="UC">UC</option>
+                            <option value="SP">SP</option>
+                            <option value="Odoo">Odoo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="control-label col-md-2">接口路径</label>
+                    <div class="col-md-6">
+                        <input class="form-control" name="api_address">
+                    </div>
+                </div>
+                <div class="form-group" id="api_method">
+                    <label class="control-label col-md-2">请求方式</label>
+
+
+                    <div class="col-md-1 control-label">
+                        <label class="fancy-radio">
+                            <input name="api_method" value="GET" type="radio" onclick="removeApiType(this)"><span><i></i>GET</span>
+                        </label>
+                    </div>
+                    <div class="col-md-1 control-label">
+                        <label class="fancy-radio">
+                            <input name="api_method" value="POST" type="radio" onclick="removeApiType(this)"><span><i></i>POST</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" id="api_content_type">
+                    <label class="control-label col-md-2">数据传输方式</label>
+                    <div class="col-md-6">
+                        <select class="form-control" name="api_content_type" onclick="changetag(this)">
+                            <option value="">请选择</option>
+                            <option value="JSON">JSON</option>
+                            <option value="APPLICATION/X-WWW-FROM-URLENCODED">APPLICATION/X-WWW-FROM-URLENCODED</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="control-label col-md-2" id="label">请求Body</label>
+                    <div class="col-md-6" id="params">
+                        <textarea name="body" id="textarea" class="form-control" placeholder='' rows="3"></textarea>
+                    </div>
+                </div>
+                <div id="toastr-demo" class="container col-md-5 pull-left" >
+                    <button type="submit" class="btn btn-primary pull-right">保存</button>
+                </div>
+            </form>
+
+
+        </div>
+    </div>
+</div>
+
+{% block script %}
+<script>
+    function removeApiType(option) {
+        var api_content_type = $("#api_content_type")
+        if(option.value=='GET'){
+            if(api_content_type.length>0){
+                api_content_type.remove()
+            }
+        }
+
+        {#如果api_content_type长度为0则添加html(用length是否为0判断元素是否存在，因为元素不存在时选择器也会取得值，只是长度为0)#}
+        if(option.value=='POST'){
+            if(api_content_type.length==0){
+                api_content_type = " <div class=\"form-group\" id=\"api_content_type\">\n" +
+                    "                    <label class=\"control-label col-md-2\">数据传输方式</label>\n" +
+                    "                    <div class=\"col-md-6\">\n" +
+                    "                        <select class=\"form-control\" name=\"api_content_type\" onclick=\"changetag(this)\">\n" +
+                    "                            <option value=\"\">请选择</option>\n" +
+                    "                            <option value=\"JSON\">JSON</option>\n" +
+                    "                            <option value=\"APPLICATION/X-WWW-FROM-URLENCODED\">APPLICATION/X-WWW-FROM-URLENCODED</option>\n" +
+                    "                        </select>\n" +
+                    "                    </div>\n" +
+                    "                </div>"
+                $("#api_method").after(api_content_type)
+            }
+        }
+    }
+</script>
+
+<script>
+    function changetag(option) {
+        if(option.value=='JSON'){
+            $('#textarea').attr('placeholder', '请输入JSON格式，如：{“login_name": ""}')
+            {#$('#params').append('<textarea id="textarea" class="form-control" placeholder=\'请输入JSON格式数据，如：{“login_name": ""}\' rows="3"></textarea>');#}
+        }
+        if(option.value=='APPLICATION/X-WWW-FROM-URLENCODED'){
+            $('#textarea').attr('placeholder', '请输入表单格式参数，以逗号分隔，如：login_name,login_password')
+        }
+        else {
+            console.log(option.value)
+        }
+    }
+</script>
+    
+    <script>
+        function check() {
+            var form = new FormData(document.getElementById("api_add_form"));
+            var api_name = form.get('api_name');
+            var api_belong_project = form.get('api_belong_project')
+            var api_address = form.get('api_address')
+            var api_method = form.get('api_method')
+            var api_content_type = form.get('api_content_type')
+            var body = form.get('body')
+            console.log(api_name, api_belong_project, api_address, api_method, api_content_type, body)
+            tag_div = $("#alert")
+            if(tag_div) {
+                tag_div.remove()
+            }
+            if(api_method=="GET"){
+                api_content_type = true
+            }
+            if (!(api_name && api_belong_project && api_address && api_method && api_content_type && body)){
+                danger_div = '<div id="alert" class="alert alert-danger alert-dismissable" width="20"><button type="button" class="close" data-dismiss="alert">×</button>必填项不能为空</div>'
+                $('.breadcrumb').before(danger_div)
+                return false
+            }
+            else {
+                return true
+            }
+        }
+    </script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends 'base_list.html' %}
+
+{% block li %}
+<li>
+    <a href="#subPages" data-toggle="collapse" class="active"><i class="lnr lnr-file-empty"></i> <span>接口自动化</span> <i class="icon-submenu lnr lnr-chevron-left"></i></a>
+    <div id="subPages" class="collapse in">
+        <ul class="nav">
+            <li><a href="/api/list/" class="">接口列表</a></li>
+            <li><a href="/case/list/" class="">用例列表</a></li>
+            <li><a href="/schedule/list/" class="active">测试任务</a></li>
+            <li><a href="/api/report/" class="">测试报告</a></li>
+            <li><a href="/dependency/list/" class="">全局参数</a></li>
+        </ul>
+    </div>
+</li>
+{% endblock %}
+
+{% block list-body %}
+
+    <div class="container-fluid">
+        <div class="col-md-2 pull-left">
+            <ul class="breadcrumb">
+                <li>测试任务</li>
+            </ul>
+        </div>
+        <div class="pull-right">
+            <button class="btn btn-primary" onclick="schedule_run()">执行任务</button>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-body">
+            <form method="get" action="/schedule/list/filter/">
+                <div class="row">
+                    <div class="form-group pull-right">
+                        <button type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                        <a type="button" class="btn btn-primary" onclick="btn_reset()"><span class="lnr lnr-trash"></span></a>
+                    </div>
+
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <select class="form-control" name="search_schedule_status" id="schedule_status">
+                                <option value="">请选择</option>
+                                <option value="待执行">待执行</option>
+                                <option value="执行中">执行中</option>
+                                <option value="完毕">完毕</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <select class="form-control" name="search_env" id="env">
+                                <option value="">请选择</option>
+                                <option value="test">test</option>
+                                <option value="staging">staging</option>
+                                <option value="production">production</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <input name="search_name" type="text" value="{{ origin_data.name }}" class="form-control form-control" placeholder="任务名">
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+
+            <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="text-left" width="20">
+                    <input type="checkbox" id="checkbox-ifs" onclick="changeBox(this)" value="0">
+                  </th>
+                  <th><strong>任务名</strong></th>
+                  <th><strong>环境</strong></th>
+                  <th><strong>关联用例</strong></th>
+{#                  <th><strong>计划时间</strong></th>#}
+                  <th><strong>上次执行时间</strong></th>
+                  <th><strong>执行状态</strong></th>
+                  <th><strong>执行次数</strong></th>
+                  <th><strong>有效</strong></th>
+                  <th><strong>创建时间</strong></th>
+                  <th><strong>操作</strong></th>
+                </tr>
+              </thead>
+                <tbody>
+                {%for schedule in list%}
+                    <tr>
+                      <td>
+                        <input type="checkbox" class="checkbox-ifs" value={{schedule.id}} name="checkbox_id">
+                      </td>
+                      <td>{{schedule.name}}</td>
+                      <td>{{schedule.env}}</td>
+                      <td>{{schedule.case_ids}}</td>
+{#                      <td>{{schedule.schedule_time}}</td>#}
+                      <td>{{schedule.last_do_time}}</td>
+                      <td>{{schedule.schedule_status}}</td>
+                      <td>{{schedule.do_times}}</td>
+                      <td>{{schedule.status}}</td>
+                      <td>{{schedule.create_time|date:"Y-m-d H:i:s"}}</td>
+                      <td>
+{#                          <a href="/schedule/edit/?operation=query&id={{ schedule.id }}"><span class="fa fa-pencil"></span>&nbsp;&nbsp;</a>#}
+                          <a href="/schedule/delete/?id={{ schedule.id }}" onclick="return confirm('确认删除？')"><span class="fa fa-trash"></span>&nbsp;&nbsp;</a>
+                      </td>
+                    </tr>
+                {%endfor%}
+              </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block base_list_script %}
+
+<script type="text/javascript">
+  function changeBox(box){
+    var boxs = document.getElementsByClassName('checkbox-ifs');
+    if(box.checked){
+       for (i=0; i<boxs.length; i++){
+            document.getElementsByClassName('checkbox-ifs')[i].checked = true;
+       }
+    }else{
+       for (i=0; i<boxs.length; i++){
+           document.getElementsByClassName('checkbox-ifs')[i].checked = false;
+       }
+    }
+  }
+</script>
+
+<script>
+//保持环境/执行状态为选中值
+var filter_env = "{{ origin_data.env }}"
+var filter_schedule_status = "{{ origin_data.schedule_status }}"
+if(filter_env){
+    $(document).ready(
+    function set_env() {
+        $("#env").val(filter_env)
+    }
+)
+}
+if(filter_schedule_status){
+    $(document).ready(
+    function set_schedule_status() {
+        $("#schedule_status").val(filter_schedule_status)
+    }
+)
+}
+</script>
+
+<script>
+    function schedule_run() {
+        var selected_ids = [];
+        var checked_checkbox = $("input:checkbox:checked");
+        $.each(checked_checkbox, function (i, n) {
+            if($(n).val()!='0'){
+                selected_ids.push($(n).val());
+            }
+        });
+        var schedule_ids = String(selected_ids)
+        if(!schedule_ids.length){
+            alert('请至少选择一项')
+        }
+        else {
+            if(confirm('确认执行？')){
+                $.post(
+                    '/schedule/run/',
+                    {'ids': schedule_ids},
+                    function (response) {
+                        var r = JSON.parse(response)
+                        alert(r.message)
+                    }
+                );
+            }
+        }
+    }
+</script>
+
+{% endblock %}

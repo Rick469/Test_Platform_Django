@@ -1,0 +1,139 @@
+{% extends 'base_list.html' %}
+
+{% block li %}
+<li>
+    <a href="#subPages" data-toggle="collapse" class="active"><i class="lnr lnr-file-empty"></i> <span>接口自动化</span> <i class="icon-submenu lnr lnr-chevron-left"></i></a>
+    <div id="subPages" class="collapse in">
+        <ul class="nav">
+            <li><a href="/api/list/" class="active">接口列表</a></li>
+            <li><a href="/case/list/" class="">用例列表</a></li>
+            <li><a href="/schedule/list/" class="">测试任务</a></li>
+            <li><a href="/api/report/" class="">测试报告</a></li>
+            <li><a href="/dependency/list/" class="">全局参数</a></li>
+        </ul>
+    </div>
+</li>
+{% endblock %}
+
+{% block list-body %}
+
+<div class="container-fluid">
+    <div class="col-md-2 pull-left">
+        <ul class="breadcrumb">
+            <li>接口列表</li>
+        </ul>
+    </div>
+    <div class="col-md-1 pull-right">
+        <a href="/api/add"><button class="btn btn-primary">添加接口</button></a>
+    </div>
+</div>
+<div class="panel">
+    <div class="panel-body">
+        <div class="row">
+            <form method="get" action="/api/list/filter/">
+                <div class="col-sm-8 pull-right">
+                    <div class="form-group pull-right">
+                        <button type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                        <a type="button" class="btn btn-primary" onclick="btn_reset()"><span class="lnr lnr-trash"></span></a>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <select class="form-control" name="search_belong_project" id="belong_project">
+                                <option value="">请选择</option>
+                                <option value="OC">OC</option>
+                                <option value="PC">PC</option>
+                                <option value="UC">UC</option>
+                                <option value="SP">SP</option>
+                                <option value="Odoo">Odoo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <input name="search_address" type="text" value="{{ origin_data.api_address }}" class="form-control form-control" placeholder="接口地址">
+                        </div>
+                    </div>
+                    <div class="col-sm-2 pull-right">
+                        <div class="form-group">
+                            <input name="search_name" type="text" value="{{ origin_data.api_name }}" class="form-control form-control" placeholder="接口名称">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th class="text-left" width="20">
+                <input type="checkbox" id="checkbox-ifs" onclick="changeBox(this)">
+              </th>
+              <th><strong>项目</strong></th>
+              <th><strong>接口名称</strong></th>
+              <th><strong>接口路径</strong></th>
+              <th><strong>数据传输方式</strong></th>
+              <th><strong>POST/GET</strong></th>
+              <th><strong>创建时间</strong></th>
+              <th><strong>状态</strong></th>
+              <th><strong>操作</strong></th>
+            </tr>
+          </thead>
+            <tbody>
+            {%for api in list%}
+                <tr>
+                  <td>
+                    <input type="checkbox" class="checkbox-ifs" value={{api.id}} name="checkbox_id">
+                  </td>
+                  <td>{{ api.belong_project }}</td>
+                  <td>{{api.name}}</td>
+                  <td>{{api.path}}</td>
+                  <td>{{api.content_type}}</td>
+                  <td>{{api.method}}</td>
+                  <td>{{api.create_time|date:"Y-m-d H:i:s"}}</td>
+                  <td>{{api.status}}</td>
+                  <td>
+                      <a href="/api_detail/?id={{api.id}}"><span class="fa fa-eye"></span>&nbsp;&nbsp;</a>
+                      <a href="/api/edit/?operation=query&id={{ api.id }}"><span class="fa fa-pencil"></span>&nbsp;&nbsp;</a>
+                      <a href="/api/edit/?operation=delete&id={{ api.id }}" onclick="return confirm('确认删除？')"><span class="fa fa-trash"></span>&nbsp;&nbsp;</a>
+                  </td>
+                </tr>
+            {%endfor%}
+          </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block base_list_script %}
+
+<script type="text/javascript">
+  function changeBox(box){
+    var boxs = document.getElementsByClassName('checkbox-ifs');
+    if(box.checked){
+       for (i=0; i<boxs.length; i++){
+            document.getElementsByClassName('checkbox-ifs')[i].checked = true;
+       }
+    }else{
+       for (i=0; i<boxs.length; i++){
+           document.getElementsByClassName('checkbox-ifs')[i].checked = false;
+       }
+    }
+  }
+</script>
+
+<script>
+//保持所属项目筛选项选中值
+var filter_belong_project = "{{ origin_data.api_belong_project }}"
+console.log(filter_belong_project)
+if(filter_belong_project){
+    $(document).ready(
+    function set_api_belong_project() {
+        $("#belong_project").val(filter_belong_project)
+    }
+)
+}
+</script>
+
+{% endblock %}
